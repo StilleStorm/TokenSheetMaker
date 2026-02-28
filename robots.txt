@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://token-sheet-maker.pages.dev/sitemap.xml
+Sitemap: https://tokens.stillestormstudio.com/sitemap.xml
