@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.env
+node_modules/
+server.py
+__pycache__/
+.claude/

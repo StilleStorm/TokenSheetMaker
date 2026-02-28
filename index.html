@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TokenSheetMaker — TTRPG Token Sheet Creator</title>
+  <meta name="description" content="Create print-ready TTRPG token sheets. Configure grid, insert images, export to PDF with exact physical dimensions. Free, no account required.">
+  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <!--
+    ── Cache-busting ──────────────────────────────────
+    Bump the ?v= number everywhere below on each deploy.
+    The import map remaps every "./foo.js" specifier used
+    inside JS modules to a versioned URL, so one bump here
+    forces the browser to re-fetch ALL modules.
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "./config.js":           "./js/config.js?v=11",
+      "./model.js":            "./js/model.js?v=11",
+      "./grid.js":             "./js/grid.js?v=11",
+      "./canvas-renderer.js":  "./js/canvas-renderer.js?v=11",
+      "./cell-interaction.js": "./js/cell-interaction.js?v=11",
+      "./image-handler.js":    "./js/image-handler.js?v=11",
+      "./export-pdf.js":       "./js/export-pdf.js?v=11",
+      "./export-image.js":     "./js/export-image.js?v=11",
+      "./ui-controls.js":      "./js/ui-controls.js?v=11",
+      "./frames.js":           "./js/frames.js?v=11",
+      "./app.js":              "./js/app.js?v=11"
+    }
+  }
+  </script>
+  <script>
+    // Version-change detection: reload if version bumped since last visit.
+    (function () {
+      var APP_VERSION = '11';
+      var key = 'tsm-version';
+      var prev = localStorage.getItem(key);
+      if (prev && prev !== APP_VERSION) {
+        localStorage.setItem(key, APP_VERSION);
+        if ('caches' in window) {
+          caches.keys().then(function (names) {
+            names.forEach(function (n) { caches.delete(n); });
+          });
+        }
+        location.reload();
+        return;
+      }
+      localStorage.setItem(key, APP_VERSION);
+    })();
+  </script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>TokenSheetMaker</h1>
+        <p>TTRPG Token Sheet Creator</p>
+      </div>
+
+      <!-- Page Settings -->
+      <div class="sidebar-section">
+        <h2>Page</h2>
+        <div class="control-group">
+          <label for="paper-size">Paper Size</label>
+          <select id="paper-size"></select>
+        </div>
+      </div>
+
+      <!-- Token Settings -->
+      <div class="sidebar-section">
+        <h2>Tokens</h2>
+
+        <div class="control-group">
+          <label for="token-preset">Creature Size</label>
+          <select id="token-preset"></select>
+        </div>
+
+        <div class="control-group">
+          <label>Cell Size</label>
+          <div class="range-row">
+            <input type="range" id="cell-size" min="10" max="120" step="0.1">
+            <span class="value" id="cell-size-value">25.4 mm</span>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Shape</label>
+          <div class="radio-group">
+            <label><input type="radio" name="cell-shape" value="square"> Square</label>
+            <label><input type="radio" name="cell-shape" value="circle"> Circle</label>
+          </div>
+        </div>
+
+        <div class="grid-info" id="grid-info"></div>
+      </div>
+
+      <!-- Cut Lines -->
+      <div class="sidebar-section">
+        <h2>Cut Lines</h2>
+        <div class="control-group">
+          <div class="checkbox-row">
+            <input type="checkbox" id="cut-lines">
+            <label for="cut-lines">Show cut lines</label>
+          </div>
+        </div>
+        <div class="control-group" id="cut-line-offset-group">
+          <label>Offset</label>
+          <div class="range-row">
+            <input type="range" id="cut-line-offset" min="0" max="5" step="0.5">
+            <span class="value" id="cut-line-offset-value">1 mm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Images -->
+      <div class="sidebar-section">
+        <h2>Images</h2>
+        <input type="file" id="file-input" class="hidden" accept="image/*" multiple>
+        <button class="btn btn-secondary" id="add-image-btn">Add Images...</button>
+        <button class="btn btn-danger" id="clear-all" style="margin-top: 8px;">Clear All</button>
+        <p class="hint" style="margin-top: 6px;">Or drag & drop images onto cells</p>
+      </div>
+
+      <!-- Export -->
+      <div class="sidebar-section">
+        <h2>Export</h2>
+        <button class="btn btn-primary" id="export-pdf">Export PDF</button>
+        <button class="btn btn-secondary" id="export-png">Export PNG (300 DPI)</button>
+        <button class="btn btn-secondary" id="export-webp">Export WebP (300 DPI)</button>
+      </div>
+
+    </aside>
+
+    <!-- Main workspace -->
+    <main class="workspace">
+      <div class="canvas-container">
+        <canvas id="sheet-canvas"></canvas>
+        <!-- Zoom controls -->
+        <div class="zoom-controls">
+          <button id="zoom-out" class="zoom-btn" title="Zoom out">−</button>
+          <span id="zoom-level" class="zoom-level">100%</span>
+          <button id="zoom-in" class="zoom-btn" title="Zoom in">+</button>
+          <button id="zoom-reset" class="zoom-btn zoom-btn-text" title="Reset zoom">Reset</button>
+        </div>
+      </div>
+      <div class="print-note">
+        Screen preview is approximate. Export PDF for exact print dimensions. Print at "Actual Size" (no scaling).
+      </div>
+    </main>
+
+    <!-- SSA promo panel -->
+    <aside class="promo-panel">
+      <a href="https://simplysimpleapps.com" target="_blank" rel="noopener" class="promo-link">
+        <div class="promo-logo">&lt;<span>SSA</span>&gt;</div>
+        <div class="promo-brand">Simply<span>Simple</span>Apps</div>
+        <div class="promo-tagline">Apps that respect<br>your time<span class="promo-cursor"></span></div>
+        <div class="promo-rule"></div>
+        <ul class="promo-values">
+          <li>// No bloat</li>
+          <li>// No noise</li>
+          <li>// No dark patterns</li>
+        </ul>
+        <div class="promo-rule"></div>
+        <div class="promo-app">
+          <div class="promo-app-name">Re:Itero</div>
+          <div class="promo-app-desc">Minimalist habit tracker</div>
+          <div class="promo-badge">Coming Soon</div>
+        </div>
+        <div class="promo-cta">Explore &rarr;</div>
+        <div class="promo-footer">A Stille Storm Studio brand</div>
+      </a>
+    </aside>
+  </div>
+
+  <!-- pdf-lib from CDN -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <!-- App entry point — version is handled by the import map above -->
+  <script type="module" src="js/app.js?v=11"></script>
+</body>
+</html>
