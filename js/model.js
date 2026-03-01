@@ -58,6 +58,10 @@ export function setCutLineOffsetMm(mm) {
   state.cutLineOffsetMm = mm;
 }
 
+export function setMarginMm(mm) {
+  state.marginMm = mm;
+}
+
 export function initGrid(cols, rows) {
   state.cols = cols;
   state.rows = rows;

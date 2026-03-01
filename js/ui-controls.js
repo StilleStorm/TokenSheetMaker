@@ -1,7 +1,7 @@
 // ui-controls.js — Bind sidebar/toolbar controls to model
 
 import { PAPER_SIZES, DEFAULTS, TOKEN_PRESETS } from './config.js';
-import { getState, setPaperSize, setCellSizeMm, setCellShape, setCutLines, setCutLineOffsetMm, clearAll } from './model.js';
+import { getState, setPaperSize, setCellSizeMm, setCellShape, setCutLines, setCutLineOffsetMm, setMarginMm, clearAll } from './model.js';
 
 let onChangeCallback = null;
 
@@ -95,6 +95,20 @@ export function initControls(onChange) {
     if (val >= 0) {
       setCutLineOffsetMm(val);
       cutOffsetValue.textContent = val + ' mm';
+      fireChange();
+    }
+  });
+
+  // Page margin
+  const marginInput = document.getElementById('page-margin');
+  const marginValue = document.getElementById('page-margin-value');
+  marginInput.value = DEFAULTS.marginMm;
+  marginValue.textContent = DEFAULTS.marginMm + ' mm';
+  marginInput.addEventListener('input', () => {
+    const val = parseFloat(marginInput.value);
+    if (val >= 0) {
+      setMarginMm(val);
+      marginValue.textContent = val + ' mm';
       fireChange();
     }
   });
